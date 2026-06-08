@@ -255,16 +255,49 @@ function renderCardList() {
     return;
   }
   inner.innerHTML = deck.cards.map((c, i) => `
-    <div class="card-row">
+    <div class="card-row" id="card-row-${i}">
       <div class="card-row-num">${i + 1}</div>
       <div class="card-row-content">
         <div class="card-row-q">${esc(c.q)}</div>
         <div class="card-row-a">${esc(c.a)}</div>
       </div>
+      <button class="card-row-del" onclick="editCard(${i})" title="Edit">✏️</button>
       <button class="card-row-del" onclick="deleteCard(${i})" title="Delete">✕</button>
     </div>
   `).join('');
 }
+
+window.editCard = function (idx) {
+  const deck = getDeck(activeDeckId);
+  if (!deck) return;
+  const c = deck.cards[idx];
+  const row = document.getElementById('card-row-' + idx);
+  if (!row) return;
+  row.innerHTML = `
+    <div class="card-row-num">${idx + 1}</div>
+    <div class="card-row-content">
+      <input type="text" id="edit-q-${idx}" value="${esc(c.q)}" style="margin-bottom:6px">
+      <textarea id="edit-a-${idx}" style="min-height:50px">${esc(c.a)}</textarea>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn btn-green btn-sm" onclick="saveCard(${idx})">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="renderCardList()">Cancel</button>
+      </div>
+    </div>
+  `;
+};
+
+window.saveCard = function (idx) {
+  const deck = getDeck(activeDeckId);
+  if (!deck) return;
+  const q = document.getElementById('edit-q-' + idx).value.trim();
+  const a = document.getElementById('edit-a-' + idx).value.trim();
+  if (!q || !a) { toast('Both fields required'); return; }
+  deck.cards[idx] = { q, a };
+  save();
+  renderCardList();
+  showStudyCard();
+  toast('Card updated ✓');
+};
 
 window.deleteCard = function (idx) {
   const deck = getDeck(activeDeckId);
