@@ -7,6 +7,7 @@ let quizDeckId = null;
 let quizQuestions = [];
 let quizIndex = 0;
 let quizCorrect = 0;
+let quizMode = 'choice'; // 'choice' | 'tf'
 let exportFmt = 'json';
 
 /* ── Storage ───────────────────────────────────────────── */
@@ -69,6 +70,15 @@ document.querySelectorAll('.seg-btn[data-seg]').forEach(btn => {
     document.getElementById('seg-import').style.display = btn.dataset.seg === 'import' ? '' : 'none';
     document.getElementById('seg-export').style.display = btn.dataset.seg === 'export' ? '' : 'none';
     if (btn.dataset.seg === 'export') renderExportSelect();
+  });
+});
+
+/* ── Quiz mode segmented ───────────────────────────────── */
+document.querySelectorAll('.seg-btn[data-quiz-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.seg-btn[data-quiz-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    quizMode = btn.dataset.quizMode;
   });
 });
 
@@ -302,12 +312,26 @@ function openQuiz(deckId) {
 
 function startQuiz() {
   const deck = getDeck(quizDeckId);
-  quizQuestions = shuffle(deck.cards).map((card, i) => {
-    const wrongPool = deck.cards.filter((_, j) => j !== deck.cards.indexOf(card));
-    const wrongs = shuffle(wrongPool).slice(0, 3).map(c => c.a);
-    const options = shuffle([card.a, ...wrongs]);
-    return { q: card.q, correct: card.a, options };
-  });
+  if (quizMode === 'tf') {
+    quizQuestions = shuffle(deck.cards).map((card, i) => {
+      // 50/50 show the real answer or a wrong one from another card
+      const isTrue = Math.random() < 0.5;
+      let shown = card.a;
+      if (!isTrue) {
+        const others = deck.cards.filter(c => c.a !== card.a);
+        if (others.length) shown = shuffle(others)[0].a;
+        else return { mode: 'tf', q: card.q, shown: card.a, answerTrue: true };
+      }
+      return { mode: 'tf', q: card.q, shown, answerTrue: shown === card.a };
+    });
+  } else {
+    quizQuestions = shuffle(deck.cards).map((card, i) => {
+      const wrongPool = deck.cards.filter((_, j) => j !== deck.cards.indexOf(card));
+      const wrongs = shuffle(wrongPool).slice(0, 3).map(c => c.a);
+      const options = shuffle([card.a, ...wrongs]);
+      return { mode: 'choice', q: card.q, correct: card.a, options };
+    });
+  }
   quizIndex = 0;
   quizCorrect = 0;
   document.getElementById('quiz-deck-picker').style.display = 'none';
@@ -321,13 +345,41 @@ function showQuizQuestion() {
   const total = quizQuestions.length;
   document.getElementById('quiz-counter').textContent = `${quizIndex + 1} / ${total}`;
   document.getElementById('quiz-progress').style.width = `${((quizIndex + 1) / total) * 100}%`;
-  document.getElementById('quiz-question-text').textContent = q.q;
 
   const optEl = document.getElementById('quiz-options');
-  optEl.innerHTML = q.options.map(opt => `
-    <button class="quiz-option" onclick="answerQuiz(this, '${esc(opt)}', '${esc(q.correct)}')">${esc(opt)}</button>
-  `).join('');
+  if (q.mode === 'tf') {
+    document.getElementById('quiz-question-text').innerHTML =
+      `${esc(q.q)}<div style="margin-top:12px;font-size:13px;font-weight:600;color:var(--label3)">Answer shown:</div>` +
+      `<div style="margin-top:4px;font-size:15px;color:var(--blue)">"${esc(q.shown)}"</div>`;
+    optEl.innerHTML = `
+      <button class="quiz-option" style="text-align:center;font-weight:600" onclick="answerTF(this, true)">✅ True</button>
+      <button class="quiz-option" style="text-align:center;font-weight:600" onclick="answerTF(this, false)">❌ False</button>
+    `;
+  } else {
+    document.getElementById('quiz-question-text').textContent = q.q;
+    optEl.innerHTML = q.options.map(opt => `
+      <button class="quiz-option" onclick="answerQuiz(this, '${esc(opt)}', '${esc(q.correct)}')">${esc(opt)}</button>
+    `).join('');
+  }
 }
+
+window.answerTF = function (btn, chosen) {
+  const q = quizQuestions[quizIndex];
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach(o => o.disabled = true);
+  const correct = chosen === q.answerTrue;
+  if (correct) { btn.classList.add('correct'); quizCorrect++; }
+  else {
+    btn.classList.add('wrong');
+    // highlight the correct button
+    opts[q.answerTrue ? 0 : 1].classList.add('correct');
+  }
+  setTimeout(() => {
+    quizIndex++;
+    if (quizIndex >= quizQuestions.length) showQuizResults();
+    else showQuizQuestion();
+  }, 900);
+};
 
 window.answerQuiz = function (btn, chosen, correct) {
   const opts = document.querySelectorAll('.quiz-option');
