@@ -41,20 +41,25 @@ body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--label);
-  width: 400px;
-  min-height: 560px;
-  max-height: 640px;
+  width: var(--popup-w, 400px);
+  height: var(--popup-h, 600px);
+  min-width: 320px;
+  min-height: 460px;
+  max-width: 780px;
+  max-height: 900px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
 
 /* ── Scrollable content ───────────────────────────────── */
 .scroll-area {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   scrollbar-width: thin;
   scrollbar-color: var(--label4) transparent;
 }
@@ -456,6 +461,53 @@ label { font-size: 12px; font-weight: 600; color: var(--label2); display: block;
 .stat-chip.green .stat-val { color: var(--green); }
 .stat-chip.red .stat-val { color: var(--red); }
 .stat-chip.blue .stat-val { color: var(--blue); }
+
+/* ── Resize handle ───────────────────────────────────── */
+.resize-handle {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 4px;
+}
+.resize-handle svg { opacity: 0.3; transition: opacity 0.15s; }
+.resize-handle:hover svg { opacity: 0.7; }
+
+/* ── Deck detail view ─────────────────────────────────── */
+#deck-detail { display: none; }
+#deck-detail.open { display: block; }
+#panel-decks.detail-open #deck-create-wrap,
+#panel-decks.detail-open #deck-list-card { display: none; }
+
+.deck-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.deck-detail-back {
+  background: none;
+  border: none;
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 4px;
+}
+.deck-detail-emoji { font-size: 22px; }
+.deck-detail-name { font-size: 16px; font-weight: 700; flex: 1; }
+.deck-detail-count { font-size: 12px; color: var(--label3); }
 
 /* ── Modal ───────────────────────────────────────────── */
 .modal-overlay {

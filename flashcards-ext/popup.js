@@ -1,6 +1,41 @@
+/* ── Resize ─────────────────────────────────────────────── */
+(function initResize() {
+  const MIN_W = 320, MIN_H = 460, MAX_W = 780, MAX_H = 900;
+  const saved = JSON.parse(localStorage.getItem('fd_size') || 'null');
+  if (saved) {
+    document.documentElement.style.setProperty('--popup-w', saved.w + 'px');
+    document.documentElement.style.setProperty('--popup-h', saved.h + 'px');
+  }
+  const handle = document.getElementById('resize-handle');
+  if (!handle) return;
+  let dragging = false, startX, startY, startW, startH;
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = true;
+    startX = e.clientX; startY = e.clientY;
+    startW = document.body.offsetWidth;
+    startH = document.body.offsetHeight;
+    document.body.style.userSelect = 'none';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.min(MAX_W, Math.max(MIN_W, startW + (e.clientX - startX)));
+    const h = Math.min(MAX_H, Math.max(MIN_H, startH + (e.clientY - startY)));
+    document.documentElement.style.setProperty('--popup-w', w + 'px');
+    document.documentElement.style.setProperty('--popup-h', h + 'px');
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    localStorage.setItem('fd_size', JSON.stringify({ w: document.body.offsetWidth, h: document.body.offsetHeight }));
+  });
+})();
+
 /* ── State ─────────────────────────────────────────────── */
 let decks = [];          // [{ id, name, emoji, cards: [{q,a}] }]
 let activeDeckId = null; // deck open in Study tab
+let deckDetailId = null; // deck open in Decks detail view
 let studyIndex = 0;
 let studyOrder = [];
 let quizDeckId = null;
@@ -110,10 +145,11 @@ function renderDeckList() {
   const inner = document.getElementById('deck-list-inner');
   if (!decks.length) {
     inner.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No decks yet.<br>Create one above or import a file.</p></div>`;
+    updateHeaderSubtitle();
     return;
   }
   inner.innerHTML = decks.map(d => `
-    <div class="deck-item" data-id="${d.id}">
+    <div class="deck-item" data-id="${d.id}" style="cursor:pointer" onclick="openDeckDetail('${d.id}')">
       <div class="deck-emoji">${d.emoji}</div>
       <div class="deck-info">
         <div class="deck-name">${esc(d.name)}</div>
@@ -121,13 +157,107 @@ function renderDeckList() {
       </div>
       <div class="deck-actions" onclick="event.stopPropagation()">
         <button class="icon-btn" title="Study" onclick="openStudy('${d.id}')">🃏</button>
-        <button class="icon-btn" title="Quiz" onclick="openQuiz('${d.id}')">✏️</button>
+        <button class="icon-btn" title="Quiz" onclick="openQuiz('${d.id}')">📝</button>
         <button class="icon-btn" title="Delete" onclick="deleteDeck('${d.id}')">🗑️</button>
       </div>
     </div>
   `).join('');
   updateHeaderSubtitle();
 }
+
+/* ── Deck detail panel ─────────────────────────────────── */
+window.openDeckDetail = function (id) {
+  deckDetailId = id;
+  const deck = getDeck(id);
+  if (!deck) return;
+  document.getElementById('dd-emoji').textContent = deck.emoji;
+  document.getElementById('dd-name').textContent = deck.name;
+  document.getElementById('panel-decks').classList.add('detail-open');
+  document.getElementById('deck-detail').classList.add('open');
+  renderDeckDetailCards();
+};
+
+document.getElementById('deck-detail-back').addEventListener('click', () => {
+  deckDetailId = null;
+  document.getElementById('panel-decks').classList.remove('detail-open');
+  document.getElementById('deck-detail').classList.remove('open');
+  renderDeckList();
+});
+
+document.getElementById('dd-add-btn').addEventListener('click', () => {
+  const deck = getDeck(deckDetailId);
+  if (!deck) return;
+  const q = document.getElementById('dd-add-q').value.trim();
+  const a = document.getElementById('dd-add-a').value.trim();
+  if (!q || !a) { toast('Both fields required'); return; }
+  deck.cards.push({ q, a });
+  save();
+  document.getElementById('dd-add-q').value = '';
+  document.getElementById('dd-add-a').value = '';
+  document.getElementById('dd-count').textContent = deck.cards.length + ' card' + (deck.cards.length !== 1 ? 's' : '');
+  renderDeckDetailCards();
+  toast('Card added ✓');
+});
+
+function renderDeckDetailCards() {
+  const deck = getDeck(deckDetailId);
+  if (!deck) return;
+  const el = document.getElementById('dd-card-list');
+  document.getElementById('dd-count').textContent = deck.cards.length + ' card' + (deck.cards.length !== 1 ? 's' : '');
+  if (!deck.cards.length) {
+    el.innerHTML = `<div style="padding:12px 16px;color:var(--label3);font-size:13px">No cards yet. Add one above.</div>`;
+    return;
+  }
+  el.innerHTML = deck.cards.map((c, i) => `
+    <div class="card-row" id="dd-row-${i}">
+      <div class="card-row-num">${i + 1}</div>
+      <div class="card-row-content">
+        <div class="card-row-q">${esc(c.q)}</div>
+        <div class="card-row-a">${esc(c.a)}</div>
+      </div>
+      <button class="card-row-del" onclick="ddEditCard(${i})" title="Edit">✏️</button>
+      <button class="card-row-del" onclick="ddDeleteCard(${i})" title="Delete">✕</button>
+    </div>
+  `).join('');
+}
+
+window.ddEditCard = function (idx) {
+  const deck = getDeck(deckDetailId);
+  if (!deck) return;
+  const c = deck.cards[idx];
+  const row = document.getElementById('dd-row-' + idx);
+  if (!row) return;
+  row.innerHTML = `
+    <div class="card-row-num">${idx + 1}</div>
+    <div class="card-row-content">
+      <input type="text" id="dd-eq-${idx}" value="${esc(c.q)}" style="margin-bottom:6px">
+      <textarea id="dd-ea-${idx}">${esc(c.a)}</textarea>
+      <div class="btn-row" style="margin-top:6px">
+        <button class="btn btn-green btn-sm" onclick="ddSaveCard(${idx})">Save</button>
+        <button class="btn btn-ghost btn-sm" onclick="renderDeckDetailCards()">Cancel</button>
+      </div>
+    </div>`;
+};
+
+window.ddSaveCard = function (idx) {
+  const deck = getDeck(deckDetailId);
+  if (!deck) return;
+  const q = document.getElementById('dd-eq-' + idx).value.trim();
+  const a = document.getElementById('dd-ea-' + idx).value.trim();
+  if (!q || !a) { toast('Both fields required'); return; }
+  deck.cards[idx] = { q, a };
+  save();
+  renderDeckDetailCards();
+  toast('Card updated ✓');
+};
+
+window.ddDeleteCard = function (idx) {
+  const deck = getDeck(deckDetailId);
+  if (!deck) return;
+  deck.cards.splice(idx, 1);
+  save();
+  renderDeckDetailCards();
+};
 
 function deleteDeck(id) {
   const deck = getDeck(id);

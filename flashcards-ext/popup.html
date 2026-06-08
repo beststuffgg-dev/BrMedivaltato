@@ -8,6 +8,13 @@
 </head>
 <body>
 
+<!-- Resize handle -->
+<div class="resize-handle" id="resize-handle" title="Drag to resize">
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+    <path d="M11 1L1 11M11 6L6 11M11 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>
+</div>
+
 <!-- Header -->
 <div class="header">
   <div class="header-logo">
@@ -45,7 +52,7 @@
   <div class="panel active" id="panel-decks">
 
     <!-- Create new deck -->
-    <div class="card">
+    <div id="deck-create-wrap" class="card">
       <div class="card-section">
         <div class="section-title">New Deck</div>
         <div class="field">
@@ -71,6 +78,41 @@
         </div>
       </div>
     </div>
+
+    <!-- Deck detail (card manager) -->
+    <div id="deck-detail">
+      <div class="deck-detail-header">
+        <button class="deck-detail-back" id="deck-detail-back">← Back</button>
+        <span class="deck-detail-emoji" id="dd-emoji">📖</span>
+        <span class="deck-detail-name" id="dd-name">Deck</span>
+        <span class="deck-detail-count" id="dd-count">0 cards</span>
+      </div>
+
+      <!-- Add card -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-section">
+          <div class="section-title">Add Card</div>
+          <div class="field">
+            <label>Question / Term</label>
+            <input type="text" id="dd-add-q" placeholder="Question or term...">
+          </div>
+          <div class="field">
+            <label>Answer / Definition</label>
+            <textarea id="dd-add-a" placeholder="Answer or definition..."></textarea>
+          </div>
+          <button class="btn btn-primary btn-full" id="dd-add-btn">Add Card</button>
+        </div>
+      </div>
+
+      <!-- Card list -->
+      <div class="card">
+        <div class="card-section" style="padding-bottom:4px">
+          <div class="section-title">All Cards</div>
+        </div>
+        <div id="dd-card-list"></div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ── STUDY TAB ──────────────────────────────────────── -->
