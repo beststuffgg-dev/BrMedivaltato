@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "FlashDeck",
+  "version": "1.0.0",
+  "description": "Beautiful flashcards & quizzes — study smarter.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FlashDeck"
+  },
+  "permissions": ["storage"],
+  "icons": {
+    "16": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
+  }
+}

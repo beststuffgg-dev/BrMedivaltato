@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlashDeck</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">
+    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="3" width="14" height="10" rx="2.5" fill="white" opacity="0.9"/>
+      <rect x="3" y="5.5" width="6" height="1.5" rx="0.75" fill="#007AFF"/>
+      <rect x="3" y="8" width="10" height="1.5" rx="0.75" fill="#C7C7CC"/>
+    </svg>
+  </div>
+  <div>
+    <div class="header-title">FlashDeck</div>
+    <div class="header-subtitle" id="header-subtitle">Study smarter</div>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="decks">
+    <span class="tab-icon">📚</span>Decks
+  </button>
+  <button class="tab-btn" data-tab="study">
+    <span class="tab-icon">🃏</span>Study
+  </button>
+  <button class="tab-btn" data-tab="quiz">
+    <span class="tab-icon">✏️</span>Quiz
+  </button>
+  <button class="tab-btn" data-tab="import">
+    <span class="tab-icon">⬆️</span>Import
+  </button>
+</div>
+
+<div class="scroll-area">
+
+  <!-- ── DECKS TAB ─────────────────────────────────────── -->
+  <div class="panel active" id="panel-decks">
+
+    <!-- Create new deck -->
+    <div class="card">
+      <div class="card-section">
+        <div class="section-title">New Deck</div>
+        <div class="field">
+          <label>Deck Name</label>
+          <input type="text" id="deck-name-input" placeholder="e.g. Biology Chapter 3" maxlength="60">
+        </div>
+        <div class="field">
+          <label>Emoji Icon</label>
+          <input type="text" id="deck-emoji-input" placeholder="📖" maxlength="4" style="width:72px">
+        </div>
+        <button class="btn btn-primary btn-full" id="create-deck-btn">
+          + Create Deck
+        </button>
+      </div>
+    </div>
+
+    <!-- Deck list -->
+    <div class="card" id="deck-list-card" style="margin-top:12px">
+      <div id="deck-list-inner">
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>No decks yet.<br>Create one above or import a file.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STUDY TAB ──────────────────────────────────────── -->
+  <div class="panel" id="panel-study">
+
+    <!-- Deck picker -->
+    <div class="card" id="study-deck-picker">
+      <div class="card-section">
+        <div class="section-title">Choose a Deck</div>
+        <div id="study-deck-list">
+          <div class="empty-state" style="padding:16px">
+            <p>No decks available. Create or import one first.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Study area (hidden until deck selected) -->
+    <div id="study-area" style="display:none">
+
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill" id="study-progress" style="width:0%"></div></div>
+        <div class="progress-label" id="study-counter">0 / 0</div>
+      </div>
+
+      <!-- Flashcard -->
+      <div class="flashcard-wrap">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+          <div class="flashcard-face flashcard-front">
+            <div class="flashcard-label">Question</div>
+            <div class="flashcard-text" id="card-front-text">—</div>
+            <div class="flashcard-hint">Tap to reveal answer</div>
+          </div>
+          <div class="flashcard-face flashcard-back">
+            <div class="flashcard-label">Answer</div>
+            <div class="flashcard-text" id="card-back-text">—</div>
+            <div class="flashcard-hint">Tap to flip back</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav buttons -->
+      <div class="btn-row" style="justify-content:center; margin-bottom:12px">
+        <button class="btn btn-ghost" id="study-prev">← Prev</button>
+        <button class="btn btn-ghost" id="study-shuffle">🔀 Shuffle</button>
+        <button class="btn btn-ghost" id="study-next">Next →</button>
+      </div>
+
+      <!-- Add card to active deck -->
+      <div class="card">
+        <div class="card-section">
+          <div class="section-title">Add Card to this Deck</div>
+          <div class="field">
+            <label>Question / Term</label>
+            <input type="text" id="add-q" placeholder="Question or term...">
+          </div>
+          <div class="field">
+            <label>Answer / Definition</label>
+            <textarea id="add-a" placeholder="Answer or definition..."></textarea>
+          </div>
+          <button class="btn btn-primary btn-full" id="add-card-btn">Add Card</button>
+        </div>
+
+        <!-- Card list -->
+        <div id="card-list-wrap">
+          <div class="card-section" style="padding-bottom:4px">
+            <div class="section-title">All Cards</div>
+          </div>
+          <div id="card-list-inner"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── QUIZ TAB ───────────────────────────────────────── -->
+  <div class="panel" id="panel-quiz">
+
+    <!-- Deck picker for quiz -->
+    <div id="quiz-deck-picker">
+      <div class="card">
+        <div class="card-section">
+          <div class="section-title">Choose a Deck</div>
+          <div id="quiz-deck-list">
+            <div class="empty-state" style="padding:16px">
+              <p>No decks available.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiz area -->
+    <div id="quiz-area" style="display:none">
+
+      <div class="progress-row">
+        <div class="progress-bar"><div class="progress-fill" id="quiz-progress" style="width:0%"></div></div>
+        <div class="progress-label" id="quiz-counter">0 / 0</div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="quiz-question" id="quiz-question-text">—</div>
+        <div class="quiz-options" id="quiz-options"></div>
+      </div>
+
+    </div>
+
+    <!-- Results -->
+    <div id="quiz-results" style="display:none">
+      <div class="card">
+        <div class="card-section" style="text-align:center">
+          <div class="section-title" style="text-align:center;margin-bottom:14px">Results</div>
+          <div class="score-ring">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="44" fill="none" stroke="var(--border)" stroke-width="8"/>
+              <circle cx="50" cy="50" r="44" fill="none" stroke="var(--blue)" stroke-width="8"
+                stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="276.46"
+                id="score-circle"/>
+            </svg>
+            <div class="score-num" id="score-pct">0%</div>
+          </div>
+          <div class="stat-row">
+            <div class="stat-chip green"><div class="stat-val" id="score-correct">0</div><div class="stat-lbl">Correct</div></div>
+            <div class="stat-chip red"><div class="stat-val" id="score-wrong">0</div><div class="stat-lbl">Wrong</div></div>
+            <div class="stat-chip blue"><div class="stat-val" id="score-total">0</div><div class="stat-lbl">Total</div></div>
+          </div>
+          <div class="btn-row" style="justify-content:center;margin-top:4px">
+            <button class="btn btn-primary" id="quiz-retry-btn">Retry</button>
+            <button class="btn btn-ghost" id="quiz-back-btn">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── IMPORT TAB ─────────────────────────────────────── -->
+  <div class="panel" id="panel-import">
+
+    <!-- Segmented control -->
+    <div class="seg-control">
+      <button class="seg-btn active" data-seg="import">Import</button>
+      <button class="seg-btn" data-seg="export">Export</button>
+    </div>
+
+    <div id="seg-import">
+      <div class="card">
+        <div class="card-section">
+          <div class="section-title">Import Options</div>
+
+          <!-- Drop zone -->
+          <div class="import-drop" id="drop-zone">
+            <div class="drop-icon">📄</div>
+            <p>Drop a <strong>CSV</strong> or <strong>JSON</strong> file here<br>or <strong>click to browse</strong></p>
+          </div>
+          <input type="file" id="file-input" accept=".csv,.json,.tsv,.txt" style="display:none">
+
+          <div style="margin-top:14px">
+            <div class="section-title">Or Paste a Table / CSV</div>
+            <div class="field">
+              <label>Column separator</label>
+              <select id="csv-sep" style="width:auto">
+                <option value=",">Comma  ( , )</option>
+                <option value="	">Tab  ( → )</option>
+                <option value=";">Semicolon  ( ; )</option>
+                <option value="|">Pipe  ( | )</option>
+              </select>
+            </div>
+            <div class="field">
+              <textarea id="csv-paste" placeholder="Question,Answer&#10;What is H2O?,Water&#10;Capital of France?,Paris" style="min-height:100px;font-family:monospace;font-size:12px"></textarea>
+            </div>
+            <div class="field">
+              <label>Deck name for imported cards</label>
+              <input type="text" id="import-deck-name" placeholder="Imported Deck">
+            </div>
+            <button class="btn btn-primary btn-full" id="parse-csv-btn">Import Cards</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- QuizletFormat tip -->
+      <div class="card" style="margin-top:12px">
+        <div class="card-section">
+          <div class="section-title">Quizlet Export Format</div>
+          <p style="font-size:12px;color:var(--label3);line-height:1.6">
+            In Quizlet: <strong>Export → Copy text</strong> and paste above.<br>
+            Default Quizlet separators: <strong>Tab</strong> between term/def, <strong>newline</strong> between cards.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div id="seg-export" style="display:none">
+      <div class="card">
+        <div class="card-section">
+          <div class="section-title">Export Deck</div>
+          <div class="field">
+            <label>Choose Deck</label>
+            <select id="export-deck-select"></select>
+          </div>
+          <div class="field">
+            <label>Format</label>
+            <div class="seg-control" style="margin-bottom:0">
+              <button class="seg-btn active" data-export-fmt="json">JSON</button>
+              <button class="seg-btn" data-export-fmt="csv">CSV</button>
+            </div>
+          </div>
+          <div class="btn-row" style="margin-top:10px">
+            <button class="btn btn-primary" id="export-download-btn">⬇ Download</button>
+            <button class="btn btn-ghost" id="export-copy-btn">📋 Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="card-section">
+          <div class="section-title">Export All Decks</div>
+          <button class="btn btn-ghost btn-full" id="export-all-btn">⬇ Download All (JSON)</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- end scroll-area -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="popup.js"></script>
+</body>
+</html>
