@@ -130,11 +130,35 @@ function renderDeckList() {
 }
 
 function deleteDeck(id) {
-  if (!confirm('Delete this deck?')) return;
-  decks = decks.filter(d => d.id !== id);
-  save();
-  renderDeckList();
-  toast('Deck deleted');
+  const deck = getDeck(id);
+  if (!deck) return;
+  confirmDialog(`Delete "${deck.name}"?`, `${deck.cards.length} card(s) will be removed.`, () => {
+    decks = decks.filter(d => d.id !== id);
+    save();
+    renderDeckList();
+    toast('Deck deleted');
+  });
+}
+
+/* Custom confirm — window.confirm() is blocked in MV3 popups */
+function confirmDialog(title, msg, onYes) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">${esc(title)}</div>
+      <div class="modal-msg">${esc(msg)}</div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-red btn-full" id="modal-yes">Delete</button>
+        <button class="btn btn-ghost btn-full" id="modal-no">Cancel</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('show'));
+  const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); };
+  overlay.querySelector('#modal-yes').onclick = () => { onYes(); close(); };
+  overlay.querySelector('#modal-no').onclick = close;
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
 }
 
 function esc(str) {
